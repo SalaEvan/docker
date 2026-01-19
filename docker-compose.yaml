@@ -1,0 +1,39 @@
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: docker_site:latest
+    container_name: docker_site_container
+    ports:
+      - "5000:80"
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_USER=docker_user
+      - DATABASE_PASSWORD=docker_password
+      - DATABASE_NAME=docker_server
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: docker_user
+      MYSQL_PASSWORD: docker_password
+      MYSQL_DATABASE: docker_server
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysql $$MYSQL_DATABASE -u $$MYSQL_USER -p$$MYSQL_PASSWORD -h 127.0.0.1 -e 'show tables;' 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5      
+
+volumes:
+  db_data:
